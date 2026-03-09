@@ -36,14 +36,15 @@
 
   <script>
     function parseCSV(text) {
-      const lines = text.trim().split(/\r?\n/);
+      const lines = text.trim().split(/\r?\n/).filter(line => line.trim() !== '');
+      if (lines.length < 2) return [];
       const headers = lines[0].split(',');
       return lines.slice(1).map(line => {
         const cols = line.split(',');
         const row = {};
         headers.forEach((h, i) => row[h] = cols[i]);
         return row;
-      });
+      }).filter(row => Object.values(row).some(value => (value ?? '').trim() !== ''));
     }
 
     async function loadData() {
@@ -62,7 +63,8 @@
 
         const rows = parseCSV(text);
         if (!rows.length) {
-          throw new Error('No rows found in CSV');
+          status.textContent = 'No data rows yet. Run the scraper workflow, then refresh this page.';
+          return;
         }
 
         const byProduct = new Map();
