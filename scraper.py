@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 
 URL = "https://www.neste.lv/lv/content/degvielas-cenas"
 DATA_DIR = pathlib.Path("data")
-CSV_PATH = DATA_DIR / "fuel_prices.csv"
+CSV_PATH = Path("docs/data/fuel_prices.csv")
 
 FUEL_NAMES = [
     "Neste Futura 95",
