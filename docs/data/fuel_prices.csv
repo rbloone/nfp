@@ -1,8 +1,8 @@
 date,timestamp_utc,product,price_eur_per_l,source_url
-2026-03-05,2026-02-09T01:40:23+00:00,Neste Futura 95,1.497,https://www.neste.lv/lv/content/degvielas-cenas
-2026-03-05,2026-02-09T01:40:23+00:00,Neste Futura 98,1.567,https://www.neste.lv/lv/content/degvielas-cenas
-2026-03-05,2026-02-09T01:40:23+00:00,Neste Futura D,1.477,https://www.neste.lv/lv/content/degvielas-cenas
-2026-03-05,2026-02-09T01:40:23+00:00,Neste Pro Diesel,1.607,https://www.neste.lv/lv/content/degvielas-cenas
+2026-02-09,2026-02-09T01:40:23+00:00,Neste Futura 95,1.497,https://www.neste.lv/lv/content/degvielas-cenas
+2026-02-09,2026-02-09T01:40:23+00:00,Neste Futura 98,1.567,https://www.neste.lv/lv/content/degvielas-cenas
+2026-02-09,2026-02-09T01:40:23+00:00,Neste Futura D,1.477,https://www.neste.lv/lv/content/degvielas-cenas
+2026-02-09,2026-02-09T01:40:23+00:00,Neste Pro Diesel,1.607,https://www.neste.lv/lv/content/degvielas-cenas
 2026-03-05,2026-03-05T16:40:23+00:00,Neste Futura 95,1.617,https://www.neste.lv/lv/content/degvielas-cenas
 2026-03-05,2026-03-05T16:40:23+00:00,Neste Futura 98,1.687,https://www.neste.lv/lv/content/degvielas-cenas
 2026-03-05,2026-03-05T16:40:23+00:00,Neste Futura D,1.677,https://www.neste.lv/lv/content/degvielas-cenas
