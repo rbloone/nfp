@@ -2,59 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Neste Latvia Fuel Price Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neste Latvia fuel price tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 0; background: #f7f7f7; color: #111; }
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1f2328; }
     .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
-    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+    .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 14px rgba(0,0,0,.06); }
     h1 { margin-top: 0; }
-    .meta { color: #555; margin-bottom: 16px; }
-    #chartWrap { height: 520px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 24px; background: white; border-radius: 12px; overflow: hidden; }
-    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; }
-    th { background: #fafafa; }
-    .small { font-size: 14px; color: #666; }
-    a { color: inherit; }
+    .muted { color: #5d6773; }
+    .error { color: #b42318; white-space: pre-wrap; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid #eaecef; text-align: left; }
+    .small { font-size: 13px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>Neste Latvia fuel price tracker</h1>
-      <div class="meta">
-        Daily prices scraped from <a href="https://www.neste.lv/lv/content/degvielas-cenas">neste.lv</a>
-      </div>
-      <div id="chartWrap">
-        <canvas id="priceChart"></canvas>
-      </div>
-      <p class="small" id="status">Loading data…</p>
+      <p class="muted">Daily prices from <a href="https://www.neste.lv/lv/content/degvielas-cenas">neste.lv</a></p>
+      <p id="status" class="small muted">Loading data…</p>
+      <p id="error" class="error"></p>
+      <canvas id="chart" height="110"></canvas>
+      <table id="latestTable" hidden>
+        <thead>
+          <tr><th>Product</th><th>Latest price (EUR/L)</th><th>Latest date</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
-
-    <table id="latestTable">
-      <thead>
-        <tr>
-          <th>Product</th>
-          <th>Latest price (EUR/l)</th>
-          <th>Latest date</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
   </div>
 
   <script>
-    async function loadCsv() {
-      const res = await fetch('../data/fuel_prices.csv');
-      if (!res.ok) throw new Error('Could not load CSV');
-      return await res.text();
-    }
-
-    function parseCsv(text) {
+    function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
-      const headers = lines.shift().split(',');
-      return lines.map(line => {
+      const headers = lines[0].split(',');
+      return lines.slice(1).map(line => {
         const cols = line.split(',');
         const row = {};
         headers.forEach((h, i) => row[h] = cols[i]);
@@ -62,72 +46,75 @@
       });
     }
 
-    function groupByProduct(rows) {
-      const map = new Map();
-      for (const row of rows) {
-        if (!map.has(row.product)) map.set(row.product, []);
-        map.get(row.product).push(row);
-      }
-      for (const arr of map.values()) {
-        arr.sort((a, b) => a.date.localeCompare(b.date));
-      }
-      return map;
-    }
+    async function loadData() {
+      const status = document.getElementById('status');
+      const error = document.getElementById('error');
 
-    function renderTable(grouped) {
-      const tbody = document.querySelector('#latestTable tbody');
-      tbody.innerHTML = '';
-      [...grouped.entries()].forEach(([product, rows]) => {
-        const last = rows[rows.length - 1];
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${product}</td>
-          <td>${Number(last.price_eur_l).toFixed(3)}</td>
-          <td>${last.date}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function main() {
-      const text = await loadCsv();
-      const rows = parseCsv(text);
-      const grouped = groupByProduct(rows);
-
-      const datasets = [...grouped.entries()].map(([product, entries]) => ({
-        label: product,
-        data: entries.map(r => ({ x: r.date, y: Number(r.price_eur_l) })),
-        tension: 0.2
-      }));
-
-      const ctx = document.getElementById('priceChart');
-      new Chart(ctx, {
-        type: 'line',
-        data: { datasets },
-        options: {
-          parsing: false,
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'nearest', intersect: false },
-          scales: {
-            x: { type: 'category', title: { display: true, text: 'Date' } },
-            y: { title: { display: true, text: 'EUR/l' } }
-          }
+      try {
+        const response = await fetch(`./data/fuel_prices.csv?v=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
-      });
+        const text = await response.text();
+        if (!text.trim()) {
+          throw new Error('CSV is empty');
+        }
 
-      renderTable(grouped);
+        const rows = parseCSV(text);
+        if (!rows.length) {
+          throw new Error('No rows found in CSV');
+        }
 
-      const dates = rows.map(r => r.date).sort();
-      const latestDate = dates[dates.length - 1];
-      document.getElementById('status').textContent =
-        `Loaded ${rows.length} rows across ${grouped.size} products. Latest date: ${latestDate}`;
+        const byProduct = new Map();
+        for (const row of rows) {
+          const product = row.product;
+          const price = Number(row.price_eur_per_l);
+          const d = row.date;
+          if (!byProduct.has(product)) byProduct.set(product, []);
+          byProduct.get(product).push({ x: d, y: price });
+        }
+
+        for (const points of byProduct.values()) {
+          points.sort((a, b) => a.x.localeCompare(b.x));
+        }
+
+        const datasets = Array.from(byProduct.entries()).map(([label, data]) => ({ label, data }));
+
+        const ctx = document.getElementById('chart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: { datasets },
+          options: {
+            responsive: true,
+            parsing: false,
+            interaction: { mode: 'nearest', intersect: false },
+            scales: {
+              x: { type: 'category', title: { display: true, text: 'Date' } },
+              y: { title: { display: true, text: 'EUR/L' } }
+            }
+          }
+        });
+
+        const tbody = document.querySelector('#latestTable tbody');
+        const latestRows = Array.from(byProduct.entries()).map(([product, data]) => {
+          const last = data[data.length - 1];
+          return { product, price: last.y.toFixed(3), date: last.x };
+        }).sort((a, b) => a.product.localeCompare(b.product));
+
+        for (const row of latestRows) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${row.product}</td><td>${row.price}</td><td>${row.date}</td>`;
+          tbody.appendChild(tr);
+        }
+        document.getElementById('latestTable').hidden = false;
+        status.textContent = `Loaded ${rows.length} rows.`;
+      } catch (e) {
+        error.textContent = `Failed to load data: ${e.message}`;
+        status.textContent = 'Could not render chart.';
+      }
     }
 
-    main().catch(err => {
-      document.getElementById('status').textContent = 'Failed to load data: ' + err.message;
-      console.error(err);
-    });
+    loadData();
   </script>
 </body>
 </html>
