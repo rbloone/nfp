@@ -74,6 +74,10 @@
       return map;
     }
 
+    function getSortedUniqueDates(rows) {
+      return [...new Set(rows.map(r => r.date))].sort((a, b) => a.localeCompare(b));
+    }
+
     function renderTable(grouped) {
       const tbody = document.querySelector('#latestTable tbody');
       tbody.innerHTML = '';
@@ -97,19 +101,22 @@
         return;
       }
       const grouped = groupByProduct(rows);
+      const dates = getSortedUniqueDates(rows);
 
-      const datasets = [...grouped.entries()].map(([product, entries]) => ({
-        label: product,
-        data: entries.map(r => ({ x: r.date, y: Number(r.price_eur_per_l) })),
-        tension: 0.2
-      }));
+      const datasets = [...grouped.entries()].map(([product, entries]) => {
+        const byDate = new Map(entries.map(r => [r.date, Number(r.price_eur_per_l)]));
+        return {
+          label: product,
+          data: dates.map(date => byDate.get(date) ?? null),
+          tension: 0.2
+        };
+      });
 
       const ctx = document.getElementById('priceChart');
       new Chart(ctx, {
         type: 'line',
-        data: { datasets },
+        data: { labels: dates, datasets },
         options: {
-          parsing: false,
           responsive: true,
           maintainAspectRatio: false,
           interaction: { mode: 'nearest', intersect: false },
@@ -122,10 +129,9 @@
 
       renderTable(grouped);
 
-      const dates = rows.map(r => r.date).sort();
       const latestDate = dates[dates.length - 1];
       document.getElementById('status').textContent =
-        `Loaded ${rows.length} rows across ${grouped.size} products. Latest date: ${latestDate}`;
+        `Loaded ${rows.length} rows across ${grouped.size} products and ${dates.length} dates. Latest date: ${latestDate}`;
     }
 
     main().catch(err => {
