@@ -3,6 +3,8 @@
 This repo scrapes daily fuel prices from https://www.neste.lv/lv/content/degvielas-cenas
 and publishes a simple chart on GitHub Pages.
 
+URL: https://rbloone.github.io/nfp
+
 ## Setup
 
 1. Create a new GitHub repo.
